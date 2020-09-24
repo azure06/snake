@@ -16,7 +16,7 @@ distance ( x1, y1 ) ( x2, y2 ) =
 
 intersect : NestedTuple -> NestedTuple -> Bool
 intersect ( ( x1, y1 ), size1 ) ( ( x2, y2 ), size2 ) =
-    distance ( x1, y1 ) ( x2, y2 ) <= (size1 / 2 + size2 / 2)
+    distance ( x1, y1 ) ( x2, y2 ) < (size1 / 2 + size2 / 2)
 
 
 filterIntersect : NestedTuple -> List NestedTuple -> List NestedTuple

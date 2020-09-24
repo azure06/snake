@@ -1,6 +1,5 @@
 module Components.Header exposing (view)
 
-import Color
 import Components.Button
 import Element exposing (..)
 import Element.Background as Background
@@ -13,8 +12,8 @@ import UI.Theme
 import Utils.Common exposing (iif)
 
 
-view : UI.Theme.Theme -> UI.Theme.ElementColorPalette -> msg -> Element msg
-view theme palette switchThemeMsg =
+view : UI.Theme.ElementColorPalette -> { isPlaying : Bool, isDarkTheme : Bool, switchThemeMsg : msg } -> Element msg
+view palette { isPlaying, isDarkTheme, switchThemeMsg } =
     column
         [ width fill
         , height (px 64)
@@ -27,15 +26,19 @@ view theme palette switchThemeMsg =
             }
         , htmlAttribute <| Html.Attributes.style "z-index" "5"
         ]
-        [ row [ width fill, centerY, paddingXY 15 0 ]
+        -- Inside
+        [ row [ width fill, centerY, paddingXY 10 0 ]
             [ row []
-                [ html <| Filled.menu 24 (Color <| Color.rgb 96 181 204)
-                , column [ paddingXY 20 0, Font.color palette.onPrimary ]
+                [ -- Menu Button
+                  Components.Button.filledRound palette [] Filled.menu switchThemeMsg
+                , -- Snake - Powered by ELM
+                  column [ paddingXY 20 0, Font.color palette.onPrimary ]
                     [ el [ Font.size 18, Font.bold, paddingXY 0 2 ] (text "SNAKE")
                     , el [ Font.size 10, Font.light ] (text "POWERED BY ELM")
                     ]
                 ]
-            , row [ alignRight, paddingXY 20 0, Font.color palette.onPrimary ]
+            , -- Score
+              row [ alignRight, Font.color palette.onPrimary ]
                 [ el
                     [ width (px 1)
                     , height (px 48)
@@ -50,10 +53,16 @@ view theme palette switchThemeMsg =
                     ]
                     none
                 , el [ Font.size 12, padding 20 ] <| text "SCORE"
-                , Components.Button.filledRound
+                , -- Play ・ Pause Button
+                  Components.Button.filledRound palette
+                    []
+                    (iif (\_ -> isPlaying) (\_ -> Filled.pause) (\_ -> Filled.play_arrow))
+                    switchThemeMsg
+                , -- Theme Button
+                  Components.Button.filledRound
                     palette
                     []
-                    (iif (\_ -> UI.Theme.isDarkTheme theme) (\_ -> Filled.brightness_4) (\_ -> Filled.brightness_5))
+                    (iif (\_ -> isDarkTheme) (\_ -> Filled.brightness_4) (\_ -> Filled.brightness_5))
                     switchThemeMsg
                 ]
             ]

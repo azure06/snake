@@ -17,6 +17,7 @@ import Components.StartMenu
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
+import Game
 import Html exposing (Html)
 import Json.Decode as Decode
 import Time
@@ -26,28 +27,8 @@ import UI.Theme
 import Utils.Common exposing (iif)
 
 
-type Game
-    = Init Config
-    | Game Config State Payload
-
-
-type State
-    = Play
-    | Pause
-    | GameOver
-
-
-type Msg
-    = ArrowDown (Maybe Common.Direction)
-    | InitGame
-    | OnAnimationFrame Time.Posix
-    | GenerateFeed Components.Feed.Feed
-    | OnResize Int Int
-    | SwitchTheme
-
-
 type alias Model =
-    Game
+    Game.Game
 
 
 type alias Flags =
@@ -59,50 +40,18 @@ type alias Flags =
     }
 
 
-type alias Config =
-    { screen :
-        { width : Int
-        , height : Int
-        }
-    , theme : UI.Theme.Theme
-    }
-
-
-type alias Payload =
-    { field : Components.Field.Field
-    , player : Components.Player.Player
-    , feeds : List Components.Feed.Feed
-    , direction : Common.Direction
-    }
-
-
-
--- MAIN
+type Msg
+    = ArrowDown (Maybe Common.Direction)
+    | InitGame Game.Config
+    | OnAnimationFrame Time.Posix
+    | GenerateFeed Components.Feed.Feed
+    | OnResize Int Int
+    | SwitchTheme
 
 
 headerHeight : Int
 headerHeight =
     64
-
-
-getConfig : Model -> Config
-getConfig model =
-    case model of
-        Init config ->
-            config
-
-        Game config _ _ ->
-            config
-
-
-updateConfig : Model -> Config -> Game
-updateConfig model config =
-    case model of
-        Init _ ->
-            Init config
-
-        Game _ state payload ->
-            Game config state payload
 
 
 main : Program Flags Model Msg
@@ -117,31 +66,12 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init { screen, theme } =
-    ( Init
+    ( Game.init
         { screen = screen
         , theme = UI.Theme.fromString theme { dark = UI.Palette.dark, light = UI.Palette.light }
         }
     , Cmd.none
     )
-
-
-initGame : Config -> ( Model, Cmd Msg )
-initGame config =
-    Components.Field.init config.screen.width (config.screen.height - headerHeight)
-        |> (\field -> ( field, Components.Field.getSize field ))
-        |> (\( field, ( width, height ) ) ->
-                ( Game config
-                    Play
-                    { field = field
-                    , player =
-                        Components.Player.init (width // 2) (height // 2) Components.Player.defaultTailSize 2
-                            |> Components.Player.addTails 3 Common.Right
-                    , direction = Common.Right
-                    , feeds = []
-                    }
-                , Components.Feed.generateFeed field GenerateFeed
-                )
-           )
 
 
 
@@ -175,59 +105,66 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ArrowDown direction ->
-            case model of
-                Init _ ->
-                    ( model, Cmd.none )
+            model
+                |> Game.whenPlay
+                    (\config state payload -> Game.updateGame config state { payload | direction = updateDirection payload.direction direction })
+                    model
+                |> Utils.Common.flip Tuple.pair Cmd.none
 
-                Game config state payload ->
-                    ( Game config state { payload | direction = updateDirection payload.direction direction }, Cmd.none )
-
-        InitGame ->
-            initGame (getConfig model)
+        InitGame config ->
+            Components.Field.init config.screen.width (config.screen.height - headerHeight)
+                |> (\field -> ( field, Components.Field.getSize field ))
+                |> (\( field, ( width, height ) ) ->
+                        ( Game.initGame config
+                            { field = field
+                            , player =
+                                Components.Player.init (width // 2) (height // 2) Components.Player.defaultTailSize 2
+                                    |> Components.Player.addTails 3 Common.Right
+                            , direction = Common.Right
+                            , feeds = []
+                            }
+                        , Components.Feed.generateFeed field GenerateFeed
+                        )
+                   )
 
         OnAnimationFrame _ ->
-            case model of
-                Init _ ->
-                    ( model, Cmd.none )
+            model
+                |> Game.whenPlay
+                    (\config state payload ->
+                        let
+                            ( player, feeds ) =
+                                Components.Player.feed payload.player payload.feeds payload.direction
 
-                Game config state payload ->
-                    let
-                        ( player, feeds ) =
-                            Components.Player.feed payload.player payload.feeds payload.direction
-
-                        hittingTail =
-                            Components.Player.getHittingTail player
-                    in
-                    ( Game config
-                        state
-                        { payload
-                            | player =
-                                Maybe.map (\_ -> player) hittingTail
-                                    |> Maybe.withDefault (Components.Player.move payload.field player payload.direction)
-                            , feeds = feeds
-                        }
-                    , iif (\_ -> List.isEmpty feeds) (\_ -> Components.Feed.generateFeed payload.field GenerateFeed) (\_ -> Cmd.none)
+                            hittingTail =
+                                Components.Player.getHittingTail player
+                        in
+                        ( Game.updateGame
+                            config
+                            state
+                            { payload
+                                | player =
+                                    Maybe.map (\_ -> player) hittingTail
+                                        |> Maybe.withDefault (Components.Player.move payload.field player payload.direction)
+                                , feeds = feeds
+                            }
+                        , iif (\_ -> List.isEmpty feeds) (\_ -> Components.Feed.generateFeed payload.field GenerateFeed) (\_ -> Cmd.none)
+                        )
                     )
+                    ( model, Cmd.none )
 
         GenerateFeed feed ->
-            case model of
-                Init _ ->
+            model
+                |> Game.whenPlay
+                    (\config state payload -> ( Game.updateGame config state { payload | feeds = feed :: payload.feeds }, Cmd.none ))
                     ( model, Cmd.none )
 
-                Game config state payload ->
-                    ( Game config state { payload | feeds = feed :: payload.feeds }, Cmd.none )
-
         OnResize width height ->
-            ( getConfig model
-                |> (\config -> { config | screen = { width = width, height = height } })
-                |> updateConfig model
+            ( model |> Game.updateConfig (\config -> { config | screen = { width = width, height = height } })
             , Cmd.none
             )
 
         SwitchTheme ->
-            ( getConfig model
-                |> (\config -> { config | theme = UI.Theme.switchTheme config.theme })
-                |> updateConfig model
+            ( model |> Game.updateConfig (\config -> { config | theme = UI.Theme.switchTheme config.theme })
             , Cmd.none
             )
 
@@ -236,7 +173,7 @@ view : Model -> Html Msg
 view model =
     let
         theme =
-            .theme (getConfig model)
+            .theme (Game.getConfig model)
 
         palette =
             UI.Theme.getElementPalette theme
@@ -254,20 +191,22 @@ view model =
         [ -- Style
           globalStyle
         , -- Header
-          Components.Header.view theme palette SwitchTheme
-        , -- Game
-          case model of
-            Init { screen } ->
-                row
+          Components.Header.view palette { isPlaying = Game.isPlay model, isDarkTheme = UI.Theme.isDarkTheme theme, switchThemeMsg = SwitchTheme }
+
+        -- Game
+        , model
+            |> Game.whenPlay
+                (\_ _ payload ->
+                    row [ width fill, height fill ]
+                        [ Components.Field.view palette payload.field Components.Player.toPropsList payload.player (List.map Components.Feed.toCommonProps) payload.feeds ]
+                )
+                (row
                     [ width fill
                     , height fill
-                    , padding <| iif (\_ -> UI.Breakpoint.isExtraSmall screen.width) (\_ -> 5) (\_ -> 20)
+                    , padding <| iif (\_ -> UI.Breakpoint.isExtraSmall (Game.getConfig model).screen.width) (\_ -> 5) (\_ -> 20)
                     ]
-                    [ Components.StartMenu.view palette InitGame ]
-
-            Game _ _ payload ->
-                row [ width fill, height fill ]
-                    [ Components.Field.view palette payload.field Components.Player.toPropsList payload.player (List.map Components.Feed.toCommonProps) payload.feeds ]
+                    [ Components.StartMenu.view palette (InitGame (Game.getConfig model)) ]
+                )
         ]
         |> Element.layout []
 

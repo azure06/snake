@@ -28,7 +28,8 @@ view palette playMsg =
             , color = palette.shadow
             }
         ]
-        [ row [ width fill, Font.color palette.onPrimary, padding 20 ]
+        [ -- Header
+          row [ width fill, Font.color palette.onPrimary, padding 20 ]
             [ column
                 []
                 [ el [ Font.bold, Font.size 16 ] (text "SNAKE")
@@ -36,7 +37,8 @@ view palette playMsg =
                 ]
             , el [ alignRight, Font.size 64, Font.medium ] (text "1")
             ]
-        , column [ alignBottom, width fill ]
+        , -- Play Button
+          column [ alignBottom, width fill ]
             [ row [ centerX, padding 80 ]
                 [ column
                     [ Border.rounded 3
@@ -47,6 +49,7 @@ view palette playMsg =
                         , blur = 2
                         , color = palette.shadow
                         }
+                    , htmlAttribute <| Html.Attributes.class "ripple dark"
                     , width (px 260)
                     , height (px 54)
                     , Events.onClick playMsg

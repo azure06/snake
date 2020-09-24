@@ -63,8 +63,8 @@
     "node_modules",
     "**/*.spec.ts",
     "dist"
-  ],
-  "files": [
-    "./node_modules/.bin/tsc"
   ]
+  // "files": [
+  //   "./node_modules/.bin/tsc"
+  // ]
 }
