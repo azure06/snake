@@ -1,7 +1,8 @@
 const getFlags = () => ({
     screen: { width: window.innerWidth, height: window.innerHeight },
     theme:
-        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light',
 });

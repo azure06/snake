@@ -17,8 +17,9 @@ view palette playMsg =
     column
         [ centerX
         , centerY
-        , width (fill |> maximum 480)
-        , height (fill |> maximum 720)
+
+        -- , width (fill |> maximum 480)
+        -- , height (fill |> maximum 720)
         , Background.color palette.primary
         , Border.rounded 3
         , Border.shadow
@@ -39,7 +40,7 @@ view palette playMsg =
             ]
         , -- Play Button
           column [ alignBottom, width fill ]
-            [ row [ centerX, padding 80 ]
+            [ row [ centerX, paddingXY 40 80 ]
                 [ column
                     [ Border.rounded 3
                     , Background.color palette.primaryVariant

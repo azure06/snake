@@ -49,7 +49,6 @@ view palette { isPlaying, isDarkTheme, switchThemeMsg } =
                         , right = 0
                         , top = 0
                         }
-                    , paddingXY 15 0
                     ]
                     none
                 , el [ Font.size 12, padding 20 ] <| text "SCORE"

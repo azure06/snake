@@ -166,7 +166,7 @@ feed player feeds direction =
 
 
 getHittingTail : Player -> Maybe Tail
-getHittingTail (Player speed (Tail headInfo)) =
+getHittingTail (Player _ (Tail headInfo)) =
     let
         intersect =
             Utils.Circle.intersect ( ( toFloat headInfo.x, toFloat headInfo.y ), toFloat headInfo.size )
@@ -258,10 +258,10 @@ move field (Player speed (Tail tailInfo)) direction =
     in
     (case direction of
         Common.Up ->
-            addRoute (Tail tailInfo) { x = tailInfo.x, y = func (<) 0 (height - radius) (tailInfo.y - speed), direction = direction }
+            addRoute (Tail tailInfo) { x = tailInfo.x, y = func (<) 0 (height + radius) (tailInfo.y - speed), direction = direction }
 
         Common.Right ->
-            addRoute (Tail tailInfo) { x = func (>) (width + radius) 0 (tailInfo.x + speed), y = tailInfo.y, direction = direction }
+            addRoute (Tail tailInfo) { x = func (>) (width - radius) 0 (tailInfo.x + speed), y = tailInfo.y, direction = direction }
 
         Common.Down ->
             addRoute (Tail tailInfo) { x = tailInfo.x, y = func (>) (height + radius) 0 (tailInfo.y + speed), direction = direction }
