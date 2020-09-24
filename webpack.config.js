@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
 const webpack = require('webpack');
+const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => ({
@@ -23,10 +24,19 @@ module.exports = (env, argv) => ({
                 use: 'ts-loader',
                 exclude: /node_modules/,
             },
-            {
-                test: /elm.js$/,
-                use: 'imports-loader?this=>window',
-            },
+            // {
+            //     test: require.resolve('./dist/elm.min.js'),
+            //     use: [
+            //         {
+            //             loader: 'imports-loader',
+            //             options: {
+            //                 wrapper: {
+            //                     thisArg: 'window',
+            //                 },
+            //             },
+            //         },
+            //     ],
+            // },
         ],
     },
     resolve: {
@@ -49,8 +59,20 @@ module.exports = (env, argv) => ({
             template: 'public/index.html',
         }),
     ],
+    optimization: {
+        minimize: true,
+        minimizer: [
+            new TerserPlugin({
+                terserOptions: {
+                    mangle: true,
+                },
+                parallel: true,
+                test: /\.js(\?.*)?$/i,
+            }),
+        ],
+    },
     entry: ['./src/main.ts'],
-    devtool: 'inline-source-map',
+    devtool: argv.mode === 'development' ? 'inline-source-map' : undefined,
     output: {
         filename: 'index.js',
         path: path.resolve(__dirname, 'dist'),

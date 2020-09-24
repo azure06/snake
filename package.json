@@ -16,6 +16,8 @@
         "html-webpack-plugin": "^4.4.1",
         "imports-loader": "^1.1.0",
         "prettier": "^2.1.2",
+        "terser": "^5.3.2",
+        "terser-webpack-plugin": "^4.2.2",
         "ts-loader": "^8.0.4",
         "typescript": "^4.0.3",
         "webpack": "^4.44.2",
@@ -26,7 +28,8 @@
     },
     "scripts": {
         "start": "webpack --display=errors-only --watch --mode=development & elm-live src/Main.elm --dir=dist --open -- --output=dist/elm.js --debug",
-        "build": "webpack --mode=production && elm make src/Main.elm --output=dist/elm.js",
+        "terser": "terser dist/elm.js --compress \"pure_funcs=[F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9],pure_getters,keep_fargs=false,unsafe_comps,unsafe\" | terser --mangle --output=dist/elm.js",
+        "build": "elm make src/Main.elm --optimize --output=dist/elm.js && npm run terser && webpack --mode=production",
         "lint": "eslint -c .eslintrc.json --ext .ts ./src-ts",
         "lint:fix": "eslint -c .eslintrc.json --ext .ts ./src-ts --fix",
         "test": "echo \"Error: no test specified\" && exit 1"
